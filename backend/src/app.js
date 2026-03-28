@@ -59,7 +59,7 @@ const PORT = process.env.PORT || 5000;
 
     await initDb(); // 🔥 this will also test connection
 
-    app.listen(PORT, () => {
+    app.listen(PORT,'0.0.0.0',() => {
       console.log(`✅ Server running at http://localhost:${PORT}`);
     });
   } catch (err) {

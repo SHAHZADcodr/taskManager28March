@@ -39,7 +39,6 @@ export default function Register() {
   const formValid    = nameValid && emailValid && pwValid;
 
   const handleChange = (e) => {
-    console.log("My API URL is:", process.env.REACT_APP_API_URL);
     const { name, value } = e.target;
     setForm(prev => ({ ...prev, [name]: value }));
     // Mark field as touched as soon as user starts typing

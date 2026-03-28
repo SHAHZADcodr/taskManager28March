@@ -1,0 +1,128 @@
+openapi: 3.0.0
+info:
+  title: Task Manager API
+  version: 2.0.0
+  description: |
+    Secure REST API with HttpOnly cookie-based JWT auth,
+    refresh token rotation, and role-based access control.
+
+servers:
+  - url: http://localhost:5000/api/v1
+
+components:
+  schemas:
+    Task:
+      type: object
+      properties:
+        id:          { type: string, format: uuid }
+        title:       { type: string }
+        description: { type: string }
+        status:      { type: string, enum: [pending, in_progress, completed] }
+        priority:    { type: string, enum: [low, medium, high] }
+        due_date:    { type: string, format: date }
+        created_at:  { type: string, format: date-time }
+
+paths:
+  /auth/register:
+    post:
+      summary: Register a new user
+      tags: [Auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, email, password]
+              properties:
+                name:     { type: string, example: "Jane Smith" }
+                email:    { type: string, example: "jane@example.com" }
+                password: { type: string, minLength: 8, example: "Secret1234" }
+      responses:
+        '201': { description: User created }
+        '409': { description: Email already registered }
+        '422': { description: Validation errors }
+        '429': { description: Too many attempts }
+
+  /auth/login:
+    post:
+      summary: Log in — sets HttpOnly cookies
+      tags: [Auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email:    { type: string }
+                password: { type: string }
+      responses:
+        '200': { description: Logged in, cookies set }
+        '401': { description: Invalid credentials }
+        '429': { description: Too many attempts }
+
+  /auth/refresh:
+    post:
+      summary: Silently refresh access token using refresh cookie
+      tags: [Auth]
+      responses:
+        '200': { description: New access token cookie set }
+        '401': { description: Refresh token invalid or expired }
+
+  /auth/logout:
+    post:
+      summary: Log out — clears both cookies and revokes refresh token
+      tags: [Auth]
+      responses:
+        '200': { description: Logged out }
+
+  /auth/me:
+    get:
+      summary: Get current user profile
+      tags: [Auth]
+      responses:
+        '200': { description: Current user data }
+        '401': { description: Not authenticated }
+
+  /tasks:
+    get:
+      summary: Get tasks (admin sees all, user sees own)
+      tags: [Tasks]
+      parameters:
+        - { in: query, name: status,   schema: { type: string } }
+        - { in: query, name: priority, schema: { type: string } }
+        - { in: query, name: page,     schema: { type: integer, default: 1 } }
+        - { in: query, name: limit,    schema: { type: integer, default: 10 } }
+      responses:
+        '200': { description: Paginated task list }
+        '401': { description: Not authenticated }
+    post:
+      summary: Create a task
+      tags: [Tasks]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/Task' }
+      responses:
+        '201': { description: Task created }
+
+  /tasks/{id}:
+    put:
+      summary: Update a task
+      tags: [Tasks]
+      parameters:
+        - { in: path, name: id, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200': { description: Task updated }
+        '404': { description: Task not found or not yours }
+    delete:
+      summary: Delete a task
+      tags: [Tasks]
+      parameters:
+        - { in: path, name: id, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200': { description: Task deleted }
+        '404': { description: Not found }

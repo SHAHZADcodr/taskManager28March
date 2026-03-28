@@ -51,19 +51,17 @@ app.use(errorHandler);
 
 const PORT = process.env.PORT || 5000;
 
-// ✅ Controlled startup
-(async () => {
+app.listen(PORT, '0.0.0.0', async () => {
+  console.log(`✅ Server listening on port ${PORT}`);
+  
   try {
-    console.log("🚀 Starting server...");
-    console.log("DB PASSWORD:", process.env.DB_PASSWORD);
-
-    await initDb(); // 🔥 this will also test connection
-
-    app.listen(PORT,'0.0.0.0',() => {
-      console.log(`✅ Server running at http://localhost:${PORT}`);
-    });
+    console.log("⏳ Initializing database...");
+    // We do this INSIDE the listen callback so the port is already open
+    await initDb(); 
+    console.log("🚀 Database is ready and synchronized.");
   } catch (err) {
-    console.error("❌ Startup failed:", err.message);
-    process.exit(1);
+    // If DB fails, we log it, but the server is at least "up" 
+    // so you can see the error in the Live Logs.
+    console.error("❌ Database initialization failed:", err.message);
   }
-})();
+});
